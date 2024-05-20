@@ -288,7 +288,7 @@ def send_start_message(update: Update, context: CallbackContext):
             'intervalId': None,
             'coins': [],
         }
-
+    print(user_id, user)
     user_data = user[user_id]
     addresses = user_data['addresses']
     enabled = user_data['enabled']
