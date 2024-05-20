@@ -1,6 +1,6 @@
 from web3 import Web3
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, ConversationHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler
 from telegram.error import TelegramError
 import logging
 import requests
