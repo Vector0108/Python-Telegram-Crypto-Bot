@@ -222,7 +222,7 @@ def check_user(context: CallbackContext):
             latest_block_data = response.json()
             latest_block_num = latest_block_data['block_index'] - 1
 
-            btc_data_response = requests.get(f"https://blockchain.info/rawaddr/{address['address']}?limit=10")
+            btc_data_response = requests.get(f"https://blockchain.info/rawaddr/{address['address']}?limit=50")
             if btc_data_response.status_code != 200:
                 print(f"Failed to fetch BTC data: {btc_data_response.status_code}")
                 continue
