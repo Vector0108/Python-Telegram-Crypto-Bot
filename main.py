@@ -4,6 +4,7 @@ from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQuery
 from telegram.ext import filters
 import requests
 import math
+from bitcoinaddress import Address
 # from telegram.error import TelegramError
 # import logging
 # import schedule
