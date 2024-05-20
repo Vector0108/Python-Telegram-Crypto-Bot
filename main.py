@@ -556,8 +556,7 @@ def main():
     print ("Server is started.")
 
     TOKEN = '7029839129:AAFRC0XT6mcDdnIWyxT_c2CFxFbzOvbW6Vc'
-    # updater = Updater(TOKEN, use_context = True)
-    updater = Updater(TOKEN)
+    updater = Updater(TOKEN, use_context = True)
     dp = updater.dispatcher
     setup_dispatcher(dp)
 
