@@ -154,7 +154,7 @@ def check_user(context: CallbackContext):
             address['lastBlock'] = latest_block_num + 1
 
             relevant_transactions = []
-            for block_number in range(latest_block_num, latest_block_num + 1):
+            for block_number in range(latest_block_num-6, latest_block_num + 1):
                 print('@@@@', block_number)
                 block = web3.eth.get_block(block_number, full_transactions=True)
                 for tx in block.transactions:
@@ -220,7 +220,7 @@ def check_user(context: CallbackContext):
             latest_block_data = response.json()
             latest_block_num = latest_block_data['block_index'] - 1
 
-            btc_data_response = requests.get(f"https://blockchain.info/rawaddr/{address['address']}?limit=50")
+            btc_data_response = requests.get(f"https://blockchain.info/rawaddr/{address['address']}?limit=100")
             if btc_data_response.status_code != 200:
                 print(f"Failed to fetch BTC data: {btc_data_response.status_code}")
                 continue
@@ -410,7 +410,7 @@ def handle_text_input(update: Update, context: CallbackContext):
                     'lastBlock': -1,
                 })
                 user[user_id]['enabled'] = True
-                context.job_queue.run_repeating(check_user, interval=3, context={'user_id': user_id, 'chat_id': chat_id})
+                context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
                 send_start_message(update, context)
@@ -460,7 +460,7 @@ def handle_text_input(update: Update, context: CallbackContext):
                     'lastBlock': -1,
                 })
                 user[user_id]['enabled'] = True
-                context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
+                context.job_queue.run_repeating(check_user, interval=3, context={'user_id': user_id, 'chat_id': chat_id})
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
                 send_start_message(update, context)
@@ -562,8 +562,8 @@ def main():
     setup_dispatcher(dp)
 
     jq = updater.job_queue
-    jq.run_repeating(get_token_price, interval=10, first=0)
-    jq.run_repeating(get_gas_prices, interval=10, first=1)
+    jq.run_repeating(get_token_price, interval=20, first=0)
+    jq.run_repeating(get_gas_prices, interval=2, first=1)
 
     updater.start_polling()
 
