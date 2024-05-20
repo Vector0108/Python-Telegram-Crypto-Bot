@@ -394,7 +394,7 @@ def handle_text_input(update: Update, context: CallbackContext):
     if user_id in user_state and user_state[user_id] == GAS_PRICE_TEXT:
         return
 
-    if user_state[user_id] == "handled":
+    if user_id in user_state and user_state[user_id] == "handled":
         return
 
     context.bot.delete_message(chat_id=chat_id, message_id=message_id)
