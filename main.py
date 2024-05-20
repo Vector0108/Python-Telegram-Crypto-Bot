@@ -230,12 +230,12 @@ def check_user(context: CallbackContext):
             if start_block == -1:
                 start_block = latest_block_num
 
+            print("BTC", start_block, latest_block_num)
+
             if start_block > latest_block_num:
                 continue
 
             address['lastBlock'] = latest_block_num + 1
-
-            print("BTC")
 
             for item in btc_data['txs']:
                 if item['block_index'] < start_block:
