@@ -1,0 +1,9 @@
+web3
+telegram
+python-telegram-bot
+requests
+math
+logging
+schedule
+time
+asyncio
