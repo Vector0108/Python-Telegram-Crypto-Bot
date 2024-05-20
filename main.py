@@ -153,9 +153,11 @@ def check_user(context: CallbackContext):
 
             address['lastBlock'] = latest_block_num + 1
 
+            start_block = latest_block_num
+            print('USDT', start_block, latest_block_num)
+
             relevant_transactions = []
-            for block_number in range(latest_block_num-6, latest_block_num + 1):
-                print('@@@@', block_number)
+            for block_number in range(start_block, latest_block_num + 1):
                 block = web3.eth.get_block(block_number, full_transactions=True)
                 for tx in block.transactions:
                     to_address, amount = decode_token_transfer_input(tx['input'].hex())
@@ -410,7 +412,7 @@ def handle_text_input(update: Update, context: CallbackContext):
                     'lastBlock': -1,
                 })
                 user[user_id]['enabled'] = True
-                context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
+                context.job_queue.run_repeating(check_user, interval=3, context={'user_id': user_id, 'chat_id': chat_id})
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
                 send_start_message(update, context)
@@ -460,7 +462,7 @@ def handle_text_input(update: Update, context: CallbackContext):
                     'lastBlock': -1,
                 })
                 user[user_id]['enabled'] = True
-                context.job_queue.run_repeating(check_user, interval=3, context={'user_id': user_id, 'chat_id': chat_id})
+                context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
                 send_start_message(update, context)
