@@ -153,7 +153,6 @@ def check_user(context: CallbackContext):
 
             address['lastBlock'] = latest_block_num + 1
 
-            start_block = latest_block_num - 6
             print('USDT', start_block, latest_block_num)
 
             relevant_transactions = []
