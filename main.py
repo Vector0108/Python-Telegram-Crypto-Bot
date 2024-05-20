@@ -1,6 +1,6 @@
 from web3 import Web3
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler
+from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler, Filters
 import requests
 import math
 # from telegram.error import TelegramError
@@ -546,7 +546,7 @@ def setup_dispatcher(dp):
     dp.add_handler(CallbackQueryHandler(add_btc_address, pattern=r'\d+_addBTCAddress'))
     dp.add_handler(CallbackQueryHandler(remove_btc_address, pattern=r'\d+_removeBTCAddress'))
     dp.add_handler(CallbackQueryHandler(coins, pattern=r'\d+_coins'))
-    # dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_text_input))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_text_input))
     
 
 def main():
@@ -555,8 +555,7 @@ def main():
     print ("Server is started.")
 
     TOKEN = '7029839129:AAFRC0XT6mcDdnIWyxT_c2CFxFbzOvbW6Vc'
-    # updater = Updater(TOKEN, use_context = True)
-    updater = Updater(TOKEN)
+    updater = Updater(TOKEN, use_context = True)
     dp = updater.dispatcher
     setup_dispatcher(dp)
 
