@@ -1,13 +1,13 @@
 from web3 import Web3
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler
+import requests
+import math
 # from telegram.error import TelegramError
 # import logging
-import requests
 # import schedule
 # import time
 # import asyncio
-# import math
  
 # Connect to an Ethereum node
 web3 = Web3(Web3.HTTPProvider('https://mainnet.infura.io/v3/cb1c41d69b4044599889a61be57224a4'))
@@ -555,7 +555,8 @@ def main():
     print ("Server is started.")
 
     TOKEN = '7029839129:AAFRC0XT6mcDdnIWyxT_c2CFxFbzOvbW6Vc'
-    updater = Updater(TOKEN, use_context=True)
+    # updater = Updater(TOKEN, use_context = True)
+    updater = Updater(TOKEN)
     dp = updater.dispatcher
     setup_dispatcher(dp)
 
