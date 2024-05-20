@@ -288,7 +288,7 @@ def send_start_message(update: Update, context: CallbackContext):
             'intervalId': None,
             'coins': [],
         }
-    print(user_id, user)
+
     user_data = user[user_id]
     addresses = user_data['addresses']
     enabled = user_data['enabled']
@@ -414,7 +414,6 @@ def handle_text_input(update: Update, context: CallbackContext):
                 })
                 user[user_id]['enabled'] = True
                 if len(user[user_id]['addresses']) <= 1:
-                    print('Added')
                     context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
@@ -466,7 +465,6 @@ def handle_text_input(update: Update, context: CallbackContext):
                 })
                 user[user_id]['enabled'] = True
                 if len(user[user_id]['addresses']) <= 1:
-                    print('Added')
                     context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
