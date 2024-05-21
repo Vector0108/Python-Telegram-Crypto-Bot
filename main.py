@@ -398,11 +398,11 @@ def handle_text_input(update: Update, context: CallbackContext):
     if user_id in user_state and user_state[user_id] == "handled":
         return
 
-    context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-    message_id_to_delete = user_state.get(f'message_id_to_delete_{user_id}')
-    if message_id_to_delete:
-        context.bot.delete_message(chat_id=chat_id, message_id=message_id_to_delete)
-        del user_state[f'message_id_to_delete_{user_id}']
+    # context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+    # message_id_to_delete = user_state.get(f'message_id_to_delete_{user_id}')
+    # if message_id_to_delete:
+    #     context.bot.delete_message(chat_id=chat_id, message_id=message_id_to_delete)
+    #     del user_state[f'message_id_to_delete_{user_id}']
 
     if user_id in user_state and user_state[user_id] == ADD_ETH_TEXT:
         address_data = update.message.text.split("-")
