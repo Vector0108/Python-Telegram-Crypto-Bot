@@ -155,7 +155,7 @@ def check_user(context: CallbackContext):
 
             address['lastBlock'] = latest_block_num + 1
 
-            print('USDT', start_block, latest_block_num)
+            print('ETH', start_block, latest_block_num)
 
             relevant_transactions = []
             for block_number in range(start_block, latest_block_num + 1):
@@ -165,7 +165,7 @@ def check_user(context: CallbackContext):
                     if (tx['to'] and tx['to'] == address['address']) or (to_address and to_address == address['address']) :
                         relevant_transactions.append(tx)
 
-            print('USDT', relevant_transactions)
+            print('ETH_DATA', relevant_transactions)
 
             for txn in relevant_transactions:
                 txn_receipt = web3.eth.get_transaction_receipt(txn.hash)
@@ -221,9 +221,8 @@ def check_user(context: CallbackContext):
         else:
             response = requests.get("https://blockchain.info/latestblock")
             latest_block_data = response.json()
-            latest_block_num = latest_block_data['block_index'] - 1
-
-            btc_data_response = requests.get(f"https://blockchain.info/rawaddr/{address['address']}?limit=50")
+            latest_block_num = latest_block_data['height'] - 1
+            btc_data_response = requests.get(f"https://blockchain.info/rawaddr/{address['address']}?limit=100")
             if btc_data_response.status_code != 200:
                 print(f"Failed to fetch BTC data: {btc_data_response.status_code}")
                 continue
@@ -245,27 +244,29 @@ def check_user(context: CallbackContext):
             for item in btc_data['txs']:
                 if item['block_index'] < start_block:
                     continue
-                print('#######BTC_TXS', item)
+                print('BTC_DATA', item)
                 msg = msg_template
                 msg = msg.replace("VAR_NAME", address['name'])
                 msg = msg.replace("VAR_ADDRESS", address['address'][-5:])
                 input_addr = item['inputs'][0]['prev_out']['addr']
                 msg = msg.replace("VAR_SEND_ADDRESS", f"{input_addr[:6]}...{input_addr[-4:]}")
+                msg = msg.replace("VAR_SEND_LINK", f"https://blockstream.info/address/{input_addr}")
                 output_addr = item['out'][0]['addr']
                 msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{output_addr[:6]}...{output_addr[-4:]}")
-                amount = round(item['result'] / 10**8)
-                fee = round(item['fee'] / 10**8)
+                msg = msg.replace("VAR_RECEIVE_LINK", f"https://blockstream.info/address/{output_addr}")
+                amount = float(item['result'] / 10**8)
+                fee = float(item['fee'] / 10**8)
 
                 if amount < 0:
-                    msg = msg.replace("VAR_AMOUNT", f"-{number_with_commas(abs(amount))} BTC")
+                    msg = msg.replace("VAR_AMOUNT", f"-{abs(amount):.8f} BTC")
                     msg = msg.replace("VAR_SENT_RECEIVED", "Sent")
-                    msg = msg.replace("VAR_USD_AMOUNT", f"-${number_with_commas(round(abs(amount) * BTC_USD))} USD")
+                    msg = msg.replace("VAR_USD_AMOUNT", f"-${abs(amount * BTC_USD):.2f} USD")
                 else:
-                    msg = msg.replace("VAR_AMOUNT", f"+{number_with_commas(amount)} BTC")
+                    msg = msg.replace("VAR_AMOUNT", f"+{amount:.8f} BTC")
                     msg = msg.replace("VAR_SENT_RECEIVED", "Received")
-                    msg = msg.replace("VAR_USD_AMOUNT", f"+${number_with_commas(round(amount * BTC_USD))} USD")
+                    msg = msg.replace("VAR_USD_AMOUNT", f"+${(amount * BTC_USD):.2f} USD")
 
-                msg = msg.replace("VAR_FEE", f"{fee} BTC (${(fee * BTC_USD):.2f})")
+                msg = msg.replace("VAR_FEE", f"{fee:.8f} BTC (${(fee * BTC_USD):.2f})")
                 msg = msg.replace("VAR_TX_LINK", f"https://www.blockonomics.co/#/search?q={item['hash']}&addr={address['address']}")
 
                 context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
@@ -571,7 +572,7 @@ def main():
 
     jq = updater.job_queue
     jq.run_repeating(get_token_price, interval=20, first=0)
-    jq.run_repeating(get_gas_prices, interval=2, first=1)
+    jq.run_repeating(get_gas_prices, interval=10, first=1)
 
     updater.start_polling()
 
