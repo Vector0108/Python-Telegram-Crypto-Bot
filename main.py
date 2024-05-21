@@ -242,6 +242,7 @@ def check_user(context: CallbackContext):
             address['lastBlock'] = latest_block_num + 1
 
             for item in btc_data['txs']:
+                print(item['block_index'], item['block_index'] is not None) and (item['block_index'] < start_block)
                 if (item['block_index'] is not None) and (item['block_index'] < start_block):
                     continue
                 print('BTC_DATA', item)
