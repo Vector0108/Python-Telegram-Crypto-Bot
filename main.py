@@ -242,7 +242,6 @@ def check_user(context: CallbackContext):
             address['lastBlock'] = latest_block_num + 1
 
             for item in btc_data['txs']:
-                print(item['block_index'], item['block_index'] is not None) and (item['block_index'] < start_block)
                 if (item['block_index'] is not None) and (item['block_index'] < start_block):
                     continue
                 print('BTC_DATA', item)
@@ -396,8 +395,8 @@ def handle_text_input(update: Update, context: CallbackContext):
     message_id = update.message.message_id
     if user_id in user_state and user_state[user_id] == GAS_PRICE_TEXT:
         return
-
-    if user_id in user_state and user_state[user_id] == "handled":
+    
+    if (user_id in user_state and user_state[user_id] == "handled") or user_state == {}:
         return
 
     context.bot.delete_message(chat_id=chat_id, message_id=message_id)
