@@ -149,8 +149,8 @@ def check_user(context: CallbackContext):
             if start_block == -1:
                 start_block = latest_block_num
                 
-            if start_block > latest_block_num:
-                continue
+            # if start_block > latest_block_num:
+            #     continue
 
             address['lastBlock'] = latest_block_num + 1
 
@@ -161,7 +161,7 @@ def check_user(context: CallbackContext):
                 block = web3.eth.get_block(block_number, full_transactions=True)
                 for tx in block.transactions:
                     to_address, amount = decode_token_transfer_input(tx['input'].hex())
-                    if (tx['to'] and tx['to'] == address['address']) or (to_address and to_address == address['address']) :
+                    if (tx['to'] and tx['to'] == address['address']) or (tx['from'] and tx['from'] == address['address']) or (to_address and to_address == address['address']) :
                         relevant_transactions.append(tx)
 
             print('ETH_DATA', relevant_transactions)
@@ -172,17 +172,17 @@ def check_user(context: CallbackContext):
                     if txn['to'] == address['address']:
                         to_address = address['address']
                         amount = float(Web3.from_wei(txn['value'], 'ether'))
-                        usd_amount = number_with_commas(float(amount) * ETH_USD)
+                        usd_amount = number_with_commas(float(f"{(float(amount) * ETH_USD):.2f}"))
                         amount = number_with_commas(float(f"{amount:.5f}"))
                         amount_type = "ETH"
                     else:
                         to_address, amount = decode_token_transfer_input(txn['input'].hex())
                         if txn['to'] == usdt_addr:
-                            usd_amount = number_with_commas(float(amount) * USDT_USD)
+                            usd_amount = number_with_commas(float(f"{(float(amount) * USDT_USD):.2f}"))
                             amount = number_with_commas(float(f"{amount:.2f}"))
                             amount_type = "USDT"
                         else:
-                            usd_amount = number_with_commas(float(amount) * USDC_USD)
+                            usd_amount = number_with_commas(float(f"{(float(amount) * USDC_USD):.2f}"))
                             amount = number_with_commas(float(f"{amount:.2f}"))
                             amount_type = "USDC"
 
@@ -207,11 +207,11 @@ def check_user(context: CallbackContext):
                     if txn['from'].lower() == address['address'].lower():
                         msg = msg.replace("VAR_AMOUNT", f"-{amount} {amount_type}")
                         msg = msg.replace("VAR_SENT_RECEIVED", "Sent")
-                        msg = msg.replace("VAR_USD_AMOUNT", f"-${(usd_amount):.2f} USD")
+                        msg = msg.replace("VAR_USD_AMOUNT", f"-${usd_amount} USD")
                     else:
                         msg = msg.replace("VAR_AMOUNT", f"+{amount} {amount_type}")
                         msg = msg.replace("VAR_SENT_RECEIVED", "Received")
-                        msg = msg.replace("VAR_USD_AMOUNT", f"+${(usd_amount):.2f} USD")
+                        msg = msg.replace("VAR_USD_AMOUNT", f"+${usd_amount} USD")
                     msg = msg.replace("VAR_FEE", f"{fee} {amount_type} ($" + f"{usd_fee}" + ")")
                     msg = msg.replace("VAR_TX_LINK", f"https://etherscan.io/tx/{txn.hash.hex()}")
 
