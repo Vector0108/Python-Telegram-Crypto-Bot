@@ -178,8 +178,8 @@ def check_user(context: CallbackContext):
                     else:
                         to_address, amount = decode_token_transfer_input(txn['input'].hex())
                         if txn['to'] == usdt_addr:
-                            usd_amount = float(amount) * USDT_USD
-                            amount = f"{amount:.2f}"
+                            usd_amount = number_with_commas(float(amount) * USDT_USD)
+                            amount = number_with_commas(float(f"{amount:.2f}"))
                             amount_type = "USDT"
                         else:
                             usd_amount = float(amount) * USDC_USD
