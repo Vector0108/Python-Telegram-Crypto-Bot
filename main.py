@@ -21,6 +21,7 @@ infura_url = 'https://mainnet.infura.io/v3/cb1c41d69b4044599889a61be57224a4'
 usdt_addr = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
 usdc_addr = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 IS_STARTED_CHECK = False
+processed_transactions = set()
 
 BTC_USD = 64323.99
 ETH_USD = 3152.53
@@ -238,12 +239,22 @@ def check_user(context: CallbackContext):
             # if start_block > latest_block_num:
                 # continue
 
+            start_block = 844604
+            
             address['lastBlock'] = latest_block_num + 1
 
             for item in btc_data['txs']:
                 if (item['block_index'] is not None) and (item['block_index'] < start_block):
                     continue
+
+                transaction_hash = item['hash']
+
+                if transaction_hash in processed_transactions:
+                    continue
+
                 print('BTC_DATA', item)
+
+                processed_transactions.add(transaction_hash)
                 msg = msg_template
                 msg = msg.replace("VAR_NAME", address['name'])
                 msg = msg.replace("VAR_ADDRESS", address['address'][-5:])
