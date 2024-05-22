@@ -235,11 +235,8 @@ def check_user(context: CallbackContext):
 
             print("BTC", start_block, latest_block_num)
 
-            if start_block > latest_block_num:
-                continue
-
-            print('###########')
-
+            # if start_block > latest_block_num:
+                # continue
 
             address['lastBlock'] = latest_block_num + 1
 
