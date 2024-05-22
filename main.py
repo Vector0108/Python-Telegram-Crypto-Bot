@@ -149,15 +149,15 @@ def check_user(context: CallbackContext):
             if start_block == -1:
                 start_block = latest_block_num
                 
-            # if start_block > latest_block_num:
-            #     continue
+            if start_block > latest_block_num:
+                continue
 
             address['lastBlock'] = latest_block_num + 1
 
             print('ETH', start_block, latest_block_num)
 
             relevant_transactions = []
-            for block_number in range(19884377, 19884377 + 1):
+            for block_number in range(start_block, latest_block_num + 1):
                 block = web3.eth.get_block(block_number, full_transactions=True)
                 for tx in block.transactions:
                     to_address, amount = decode_token_transfer_input(tx['input'].hex())
