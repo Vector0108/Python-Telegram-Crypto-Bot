@@ -575,7 +575,7 @@ def main():
 
     jq = updater.job_queue
     jq.run_repeating(get_token_price, interval=20, first=0)
-    jq.run_repeating(get_gas_prices, interval=10, first=1)
+    jq.run_repeating(get_gas_prices, interval=20, first=1)
 
     updater.start_polling()
 
