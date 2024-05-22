@@ -149,8 +149,8 @@ def check_user(context: CallbackContext):
             if start_block == -1:
                 start_block = latest_block_num
                 
-            if start_block > latest_block_num:
-                continue
+            # if start_block > latest_block_num:
+            #     continue
 
             address['lastBlock'] = latest_block_num + 1
 
