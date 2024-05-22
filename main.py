@@ -399,7 +399,7 @@ def handle_text_input(update: Update, context: CallbackContext):
     if (user_id in user_state and user_state[user_id] == "handled") or user_state == {}:
         return
 
-    print(user_state)
+    print(user_id, user_state, user_id in user_state, user_state[user_id])
     
     print('###################')
 
