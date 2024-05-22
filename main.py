@@ -239,8 +239,6 @@ def check_user(context: CallbackContext):
             # if start_block > latest_block_num:
                 # continue
 
-            start_block = 844604
-            
             address['lastBlock'] = latest_block_num + 1
 
             for item in btc_data['txs']:
