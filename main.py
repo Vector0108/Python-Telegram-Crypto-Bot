@@ -399,8 +399,6 @@ def handle_text_input(update: Update, context: CallbackContext):
     if (user_id in user_state and user_state[user_id] == "handled") or user_state == {}:
         return
 
-    print(user_id, user_state, user_id in user_state, user_state[user_id])
-    
     print('###################')
 
     context.bot.delete_message(chat_id=chat_id, message_id=message_id)
