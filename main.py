@@ -21,7 +21,7 @@ infura_url = 'https://mainnet.infura.io/v3/cb1c41d69b4044599889a61be57224a4'
 usdt_addr = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
 usdc_addr = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
-address_exist = False
+is_started_check_user = False
 
 BTC_USD = 64323.99
 ETH_USD = 3152.53
@@ -137,6 +137,7 @@ def decode_token_transfer_input(input_data):
         return (None, None)
     
 def check_user(context: CallbackContext):
+    print('Run check_user')
     job_context = context.job.context
     user_id = job_context['user_id']
     chat_id = job_context['chat_id']
@@ -418,8 +419,9 @@ def handle_text_input(update: Update, context: CallbackContext):
                     'lastBlock': -1,
                 })
                 user[user_id]['enabled'] = True
-                if len(user[user_id]['addresses']) <= 1:
+                if is_started_check_user == False:
                     context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
+                is_started_check_user = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
                 send_start_message(update, context)
@@ -469,8 +471,9 @@ def handle_text_input(update: Update, context: CallbackContext):
                     'lastBlock': -1,
                 })
                 user[user_id]['enabled'] = True
-                if len(user[user_id]['addresses']) <= 1:
+                if is_started_check_user == False:
                     context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
+                is_started_check_user = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
                 send_start_message(update, context)
