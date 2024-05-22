@@ -149,8 +149,8 @@ def check_user(context: CallbackContext):
             if start_block == -1:
                 start_block = latest_block_num
                 
-            # if start_block > latest_block_num:
-            #     continue
+            if start_block > latest_block_num:
+                continue
 
             address['lastBlock'] = latest_block_num + 1
 
@@ -172,18 +172,18 @@ def check_user(context: CallbackContext):
                     if txn['to'] == address['address']:
                         to_address = address['address']
                         amount = float(Web3.from_wei(txn['value'], 'ether'))
-                        usd_amount = number_with_commas(float(f"{(float(amount) * ETH_USD):.2f}"))
-                        amount = number_with_commas(float(f"{amount:.5f}"))
+                        usd_amount = f"{(float(amount) * ETH_USD):,.2f}"
+                        amount = f"{amount:,.5f}".rstrip('0').rstrip('.')
                         amount_type = "ETH"
                     else:
                         to_address, amount = decode_token_transfer_input(txn['input'].hex())
                         if txn['to'] == usdt_addr:
-                            usd_amount = number_with_commas(float(f"{(float(amount) * USDT_USD):.2f}"))
-                            amount = number_with_commas(float(f"{amount:.2f}"))
+                            usd_amount = f"{(float(amount) * USDT_USD):,.2f}"
+                            amount = f"{amount:,.2f}"
                             amount_type = "USDT"
                         else:
-                            usd_amount = number_with_commas(float(f"{(float(amount) * USDC_USD):.2f}"))
-                            amount = number_with_commas(float(f"{amount:.2f}"))
+                            usd_amount = f"{(float(amount) * USDC_USD):,.2f}"
+                            amount = f"{amount:,.2f}"
                             amount_type = "USDC"
 
                     msg = msg_template
@@ -195,15 +195,15 @@ def check_user(context: CallbackContext):
                     msg = msg.replace("VAR_RECEIVE_LINK", f"https://etherscan.io/address/{to_address}")
                     
                     fee = web3.from_wei(txn['gasPrice'] * txn_receipt.gasUsed, 'ether')
-                    usd_fee = number_with_commas(float(f"{(float(fee) * ETH_USD):.2f}"))
+                    usd_fee = f"{(float(fee) * ETH_USD):,.2f}"
                     if amount_type == 'USDT':
                         fee = float(fee) * ETH_USD / USDT_USD
-                        fee = number_with_commas(float(f"{float(fee):.2f}"))
+                        fee = f"{float(fee):,.2f}"
                     elif amount_type == 'USDC':
                         fee = float(fee) * ETH_USD / USDC_USD
-                        fee = number_with_commas(float(f"{float(fee):.2f}"))
+                        fee = f"{float(fee):,.2f}"
                     else:
-                        fee = number_with_commas(float(f"{float(fee):.5f}"))
+                        fee = f"{float(fee):,.5f}".rstrip('0').rstrip('.')
                     if txn['from'].lower() == address['address'].lower():
                         msg = msg.replace("VAR_AMOUNT", f"-{amount} {amount_type}")
                         msg = msg.replace("VAR_SENT_RECEIVED", "Sent")
@@ -216,7 +216,7 @@ def check_user(context: CallbackContext):
                     msg = msg.replace("VAR_TX_LINK", f"https://etherscan.io/tx/{txn.hash.hex()}")
 
                     context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
-            return
+            continue
         else:
             response = requests.get("https://blockchain.info/latestblock")
             latest_block_data = response.json()
@@ -254,11 +254,10 @@ def check_user(context: CallbackContext):
                 msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{output_addr[:6]}...{output_addr[-4:]}")
                 msg = msg.replace("VAR_RECEIVE_LINK", f"https://blockstream.info/address/{output_addr}")
                 result_amount = float(item['result'] / 10**8)
-                amount = number_with_commas(float(f"{abs(float(item['result'] / 10**8)):.8f}"))
-                usd_amount = number_with_commas(float(f"{abs(float(item['result'] / 10**8) * BTC_USD):.2f}"))
-                fee = number_with_commas(float(f"{float(item['fee'] / 10**8):.8f}"))
-                usd_fee = number_with_commas(float(f"{(float(item['fee'] / 10**8) * BTC_USD):.2f}"))
-
+                amount = f"{abs(float(item['result'] / 10**8)):,.8f}".rstrip('0').rstrip('.')
+                usd_amount = f"{abs(float(item['result'] / 10**8) * BTC_USD):,.2f}"
+                fee = f"{float(item['fee'] / 10**8):,.8f}".rstrip('0').rstrip('.')
+                usd_fee = f"{(float(item['fee'] / 10**8) * BTC_USD):,.2f}"
                 if result_amount < 0:
                     msg = msg.replace("VAR_AMOUNT", f"-{amount} BTC")
                     msg = msg.replace("VAR_SENT_RECEIVED", "Sent")
@@ -272,7 +271,7 @@ def check_user(context: CallbackContext):
                 msg = msg.replace("VAR_TX_LINK", f"https://www.blockonomics.co/#/search?q={item['hash']}&addr={address['address']}")
 
                 context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
-            return
+            continue
             
 def send_start_message(update: Update, context: CallbackContext):
     if update.message:
