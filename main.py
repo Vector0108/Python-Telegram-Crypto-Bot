@@ -20,8 +20,7 @@ ethScanApiKey = "WTMYNSTIAMY42SQ9WIGK6EKVE3SHU5ZSHF"
 infura_url = 'https://mainnet.infura.io/v3/cb1c41d69b4044599889a61be57224a4'
 usdt_addr = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
 usdc_addr = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-
-is_started_check_user = False
+IS_STARTED_CHECK = False
 
 BTC_USD = 64323.99
 ETH_USD = 3152.53
@@ -137,7 +136,6 @@ def decode_token_transfer_input(input_data):
         return (None, None)
     
 def check_user(context: CallbackContext):
-    print('Run check_user')
     job_context = context.job.context
     user_id = job_context['user_id']
     chat_id = job_context['chat_id']
@@ -391,6 +389,7 @@ def coins(update: Update, context: CallbackContext):
     user_state[f'message_id_to_delete_{user_id}'] = message.message_id
 
 def handle_text_input(update: Update, context: CallbackContext):
+    global IS_STARTED_CHECK
     user_id = update.message.from_user.id
     chat_id = update.message.chat_id
     message_id = update.message.message_id
@@ -419,9 +418,9 @@ def handle_text_input(update: Update, context: CallbackContext):
                     'lastBlock': -1,
                 })
                 user[user_id]['enabled'] = True
-                if is_started_check_user == False:
+                if IS_STARTED_CHECK == False:
                     context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
-                is_started_check_user = True
+                IS_STARTED_CHECK = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
                 send_start_message(update, context)
@@ -471,9 +470,9 @@ def handle_text_input(update: Update, context: CallbackContext):
                     'lastBlock': -1,
                 })
                 user[user_id]['enabled'] = True
-                if is_started_check_user == False:
+                if IS_STARTED_CHECK == False:
                     context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
-                is_started_check_user = True
+                IS_STARTED_CHECK = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
                 send_start_message(update, context)
