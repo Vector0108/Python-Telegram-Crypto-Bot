@@ -18,6 +18,7 @@ user = {}
 user_state = {}
 ethScanApiKey = "WTMYNSTIAMY42SQ9WIGK6EKVE3SHU5ZSHF"
 infura_url = 'https://mainnet.infura.io/v3/cb1c41d69b4044599889a61be57224a4'
+blockcypher_token = 'cfde1e47917d4f989b3b568d8ee1ad32'
 usdt_addr = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
 usdc_addr = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
@@ -234,7 +235,7 @@ def check_user(context: CallbackContext):
                     context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
             continue
         else:
-            url = "https://api.blockcypher.com/v1/btc/main"
+            url = f"https://api.blockcypher.com/v1/btc/main?token={blockcypher_token}"
             response = requests.get(url)
             if response.status_code != 200:
                 print(f"Failed to fetch latest block number: {response.status_code}")
@@ -250,7 +251,7 @@ def check_user(context: CallbackContext):
 
             print("BTC", user_id, start_block, latest_block_num)
 
-            url = f"https://api.blockcypher.com/v1/btc/main/addrs/{address['address']}/full?after={start_block}"
+            url = f"https://api.blockcypher.com/v1/btc/main/addrs/{address['address']}/full?after={start_block}&token={blockcypher_token}"
 
             response = requests.get(url)
             if response.status_code != 200:
