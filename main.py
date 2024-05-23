@@ -134,6 +134,23 @@ def decode_token_transfer_input(input_data):
     else:
         return (None, None)
     
+def calculate_result(transaction, address):
+    total_sent = 0
+    total_received = 0
+
+    # Calculate total sent by the address
+    for inp in transaction['inputs']:
+        if address in inp.get('addresses', []):
+            total_sent += inp['output_value']  # Summing up the values of inputs
+
+    # Calculate total received by the address
+    for out in transaction['outputs']:
+        if address in out.get('addresses', []):
+            total_received += out['value']  # Summing up the values of outputs
+
+    # Result is total received minus total sent
+    return float((total_received - total_sent) / 10**8)
+
 def check_user(context: CallbackContext):
     job_context = context.job.context
     user_id = job_context['user_id']
@@ -217,30 +234,32 @@ def check_user(context: CallbackContext):
                     context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
             continue
         else:
-            response = requests.get("https://blockchain.info/latestblock")
+            url = "https://api.blockcypher.com/v1/btc/main"
+            response = requests.get(url)
+            if response.status_code != 200:
+                print(f"Failed to fetch latest block number: {response.status_code}")
+                continue
+
             latest_block_data = response.json()
             latest_block_num = latest_block_data['height'] - 1
-            btc_data_response = requests.get(f"https://blockchain.info/rawaddr/{address['address']}?limit=100")
-            if btc_data_response.status_code != 200:
-                print(f"Failed to fetch BTC data: {btc_data_response.status_code}")
-                continue
-            
-            btc_data = btc_data_response.json()
-            
             start_block = address['lastBlock']
-
             if start_block == -1:
                 start_block = latest_block_num
 
-            print("BTC", user_id, start_block, latest_block_num)
-
-            # if start_block > latest_block_num:
-                # continue
-
             address['lastBlock'] = latest_block_num + 1
 
+            print("BTC", user_id, start_block, latest_block_num)
+
+            url = f"https://api.blockcypher.com/v1/btc/main/addrs/{address['address']}/full?after={start_block}"
+
+            response = requests.get(url)
+            if response.status_code != 200:
+                print(f"Failed to fetch transactions for address {address}: {response.status_code}")
+                continue
+            btc_data = response.json()
+
             for item in btc_data['txs']:
-                if (item['block_index'] is not None) and (item['block_index'] < start_block):
+                if (item['block_height'] != -1) and (item['block_height'] < start_block):
                     continue
 
                 transaction_hash = item['hash']
@@ -254,17 +273,18 @@ def check_user(context: CallbackContext):
                 msg = msg_template
                 msg = msg.replace("VAR_NAME", address['name'])
                 msg = msg.replace("VAR_ADDRESS", address['address'][-5:])
-                input_addr = item['inputs'][0]['prev_out']['addr']
-                msg = msg.replace("VAR_SEND_ADDRESS", f"{input_addr[:6]}...{input_addr[-4:]}")
-                msg = msg.replace("VAR_SEND_LINK", f"https://blockstream.info/address/{input_addr}")
-                output_addr = item['out'][0]['addr']
-                msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{output_addr[:6]}...{output_addr[-4:]}")
-                msg = msg.replace("VAR_RECEIVE_LINK", f"https://blockstream.info/address/{output_addr}")
-                result_amount = float(item['result'] / 10**8)
-                amount = f"{abs(float(item['result'] / 10**8)):,.8f}".rstrip('0').rstrip('.')
-                usd_amount = f"{abs(float(item['result'] / 10**8) * BTC_USD):,.2f}"
-                fee = f"{float(item['fee'] / 10**8):,.8f}".rstrip('0').rstrip('.')
-                usd_fee = f"{(float(item['fee'] / 10**8) * BTC_USD):,.2f}"
+                sent_address = item['inputs'][0]['addresses'][0]
+                msg = msg.replace("VAR_SEND_ADDRESS", f"{sent_address[:6]}...{sent_address[-4:]}")
+                msg = msg.replace("VAR_SEND_LINK", f"https://blockstream.info/address/{sent_address}")
+                received_address = item['outputs'][0]['addresses'][0]
+                msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{received_address[:6]}...{received_address[-4:]}")
+                msg = msg.replace("VAR_RECEIVE_LINK", f"https://blockstream.info/address/{received_address}")
+                result_amount = calculate_result(item, address['address'])
+                amount = f"{abs(result_amount):,.8f}".rstrip('0').rstrip('.')
+                usd_amount = f"{abs(result_amount * BTC_USD):,.2f}"
+                fee = f"{float(item['fees'] / 10**8):,.8f}".rstrip('0').rstrip('.')
+                usd_fee = f"{(float(item['fees'] / 10**8) * BTC_USD):,.2f}"
+                # if any(address['address'] in tx['addresses'] for tx in item['inputs']):
                 if result_amount < 0:
                     msg = msg.replace("VAR_AMOUNT", f"-{amount} BTC")
                     msg = msg.replace("VAR_SENT_RECEIVED", "Sent")
@@ -278,6 +298,68 @@ def check_user(context: CallbackContext):
                 msg = msg.replace("VAR_TX_LINK", f"https://www.blockonomics.co/#/search?q={item['hash']}&addr={address['address']}")
 
                 context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
+                
+            # response = requests.get("https://blockchain.info/latestblock")
+            # latest_block_data = response.json()
+            # latest_block_num = latest_block_data['height'] - 1
+            # btc_data_response = requests.get(f"https://blockchain.info/rawaddr/{address['address']}?limit=100")
+            # if btc_data_response.status_code != 200:
+            #     print(f"Failed to fetch BTC data: {btc_data_response.status_code}")
+            #     continue
+            
+            # btc_data = btc_data_response.json()
+            
+            # start_block = address['lastBlock']
+
+            # if start_block == -1:
+            #     start_block = latest_block_num
+
+            # print("BTC", user_id, start_block, latest_block_num)
+
+            # # if start_block > latest_block_num:
+            #     # continue
+
+            # address['lastBlock'] = latest_block_num + 1
+
+            # for item in btc_data['txs']:
+            #     if (item['block_index'] is not None) and (item['block_index'] < start_block):
+            #         continue
+
+            #     transaction_hash = item['hash']
+
+            #     if transaction_hash in user[user_id]['processed_btc_transactions']:
+            #         continue
+
+            #     print('BTC_DATA', item)
+
+            #     user[user_id]['processed_btc_transactions'].append(transaction_hash)
+            #     msg = msg_template
+            #     msg = msg.replace("VAR_NAME", address['name'])
+            #     msg = msg.replace("VAR_ADDRESS", address['address'][-5:])
+            #     input_addr = item['inputs'][0]['prev_out']['addr']
+            #     msg = msg.replace("VAR_SEND_ADDRESS", f"{input_addr[:6]}...{input_addr[-4:]}")
+            #     msg = msg.replace("VAR_SEND_LINK", f"https://blockstream.info/address/{input_addr}")
+            #     output_addr = item['out'][0]['addr']
+            #     msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{output_addr[:6]}...{output_addr[-4:]}")
+            #     msg = msg.replace("VAR_RECEIVE_LINK", f"https://blockstream.info/address/{output_addr}")
+            #     result_amount = float(item['result'] / 10**8)
+            #     amount = f"{abs(float(item['result'] / 10**8)):,.8f}".rstrip('0').rstrip('.')
+            #     usd_amount = f"{abs(float(item['result'] / 10**8) * BTC_USD):,.2f}"
+            #     fee = f"{float(item['fee'] / 10**8):,.8f}".rstrip('0').rstrip('.')
+            #     usd_fee = f"{(float(item['fee'] / 10**8) * BTC_USD):,.2f}"
+            #     if result_amount < 0:
+            #         msg = msg.replace("VAR_AMOUNT", f"-{amount} BTC")
+            #         msg = msg.replace("VAR_SENT_RECEIVED", "Sent")
+            #         msg = msg.replace("VAR_USD_AMOUNT", f"-${usd_amount} USD")
+            #     else:
+            #         msg = msg.replace("VAR_AMOUNT", f"+{amount} BTC")
+            #         msg = msg.replace("VAR_SENT_RECEIVED", "Received")
+            #         msg = msg.replace("VAR_USD_AMOUNT", f"+${usd_amount} USD")
+
+            #     msg = msg.replace("VAR_FEE", f"{fee} BTC (${usd_fee})")
+            #     msg = msg.replace("VAR_TX_LINK", f"https://www.blockonomics.co/#/search?q={item['hash']}&addr={address['address']}")
+
+            #     context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
             continue
 
 def send_users_message(update: Update, context: CallbackContext):
