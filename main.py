@@ -20,8 +20,6 @@ ethScanApiKey = "WTMYNSTIAMY42SQ9WIGK6EKVE3SHU5ZSHF"
 infura_url = 'https://mainnet.infura.io/v3/cb1c41d69b4044599889a61be57224a4'
 usdt_addr = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
 usdc_addr = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-IS_STARTED_CHECK = False
-processed_transactions = set()
 
 BTC_USD = 64323.99
 ETH_USD = 3152.53
@@ -155,7 +153,7 @@ def check_user(context: CallbackContext):
 
             address['lastBlock'] = latest_block_num + 1
 
-            print('ETH', start_block, latest_block_num)
+            print('ETH', user_id, start_block, latest_block_num)
 
             relevant_transactions = []
             for block_number in range(start_block, latest_block_num + 1):
@@ -234,7 +232,7 @@ def check_user(context: CallbackContext):
             if start_block == -1:
                 start_block = latest_block_num
 
-            print("BTC", start_block, latest_block_num)
+            print("BTC", user_id, start_block, latest_block_num)
 
             # if start_block > latest_block_num:
                 # continue
@@ -247,12 +245,12 @@ def check_user(context: CallbackContext):
 
                 transaction_hash = item['hash']
 
-                if transaction_hash in processed_transactions:
+                if transaction_hash in user[user_id]['processed_btc_transactions']:
                     continue
 
                 print('BTC_DATA', item)
 
-                processed_transactions.add(transaction_hash)
+                user[user_id]['processed_btc_transactions'].append(transaction_hash)
                 msg = msg_template
                 msg = msg.replace("VAR_NAME", address['name'])
                 msg = msg.replace("VAR_ADDRESS", address['address'][-5:])
@@ -281,6 +279,9 @@ def check_user(context: CallbackContext):
 
                 context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
             continue
+
+def send_users_message(update: Update, context: CallbackContext):
+    print(user)
             
 def send_start_message(update: Update, context: CallbackContext):
     if update.message:
@@ -298,6 +299,8 @@ def send_start_message(update: Update, context: CallbackContext):
             'enabled': False,
             'intervalId': None,
             'coins': [],
+            'processed_btc_transactions': [],
+            'is_started_check': False,
         }
         user_state[user_id] = "handled"
 
@@ -400,7 +403,6 @@ def coins(update: Update, context: CallbackContext):
     user_state[f'message_id_to_delete_{user_id}'] = message.message_id
 
 def handle_text_input(update: Update, context: CallbackContext):
-    global IS_STARTED_CHECK
     user_id = update.message.from_user.id
     chat_id = update.message.chat_id
     message_id = update.message.message_id
@@ -410,7 +412,7 @@ def handle_text_input(update: Update, context: CallbackContext):
     if (user_id in user_state and user_state[user_id] == "handled") or user_state == {}:
         return
 
-    print('###################')
+    # print('###################')
 
     context.bot.delete_message(chat_id=chat_id, message_id=message_id)
     message_id_to_delete = user_state.get(f'message_id_to_delete_{user_id}')
@@ -431,9 +433,9 @@ def handle_text_input(update: Update, context: CallbackContext):
                     'lastBlock': -1,
                 })
                 user[user_id]['enabled'] = True
-                if IS_STARTED_CHECK == False:
+                if user[user_id]['is_started_check'] == False:
                     context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
-                IS_STARTED_CHECK = True
+                user[user_id]['is_started_check'] = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
                 send_start_message(update, context)
@@ -483,9 +485,9 @@ def handle_text_input(update: Update, context: CallbackContext):
                     'lastBlock': -1,
                 })
                 user[user_id]['enabled'] = True
-                if IS_STARTED_CHECK == False:
+                if user[user_id]['is_started_check'] == False:
                     context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
-                IS_STARTED_CHECK = True
+                user[user_id]['is_started_check'] = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
                 send_start_message(update, context)
@@ -553,6 +555,8 @@ def handle_start_callback(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
 
+
+
     user_id = int(query.data.split('_')[0])
     chat_id = query.message.chat_id
 
@@ -565,6 +569,7 @@ def handle_start_callback(update: Update, context: CallbackContext):
 
 
 def setup_dispatcher(dp):
+    dp.add_handler(CommandHandler('users', send_users_message))
     dp.add_handler(CommandHandler('start', send_start_message))
     dp.add_handler(CallbackQueryHandler(handle_start_callback, pattern=r'\d+_start'))
     dp.add_handler(CallbackQueryHandler(add_eth_address, pattern=r'\d+_addETHAddress'))
