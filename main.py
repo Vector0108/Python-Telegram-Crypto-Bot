@@ -203,77 +203,78 @@ def check_user(context: CallbackContext):
             for block_number in range(start_block, latest_block_num + 1):
                 block = web3.eth.get_block(block_number, full_transactions=True)
                 for tx in block.transactions:
-                    # to_address, amount = decode_token_transfer_input(tx['input'].hex())
-                    # if (tx['to'] and tx['to'] == address['address']) or (tx['from'] and tx['from'] == address['address']) or (to_address and to_address == address['address']) :
-                    #     relevant_transactions.append(tx)
-
                     receipt = web3.eth.get_transaction_receipt(tx['hash'].hex())
-                    if len(receipt['logs']) == 1:
-                        to_address, amount = decode_token_transfer_input(tx['input'].hex())
-                        if (tx['to'] and tx['to'] == address['address']) or (tx['from'] and tx['from'] == address['address']) or (to_address and to_address == address['address']) :
-                            relevant_transactions.append(tx)
-                    elif len(receipt['logs']) > 1:
-                        erc20_transfer_event_abi = {
-                            "anonymous": False,
-                            "inputs": [
-                                {"indexed": True, "name": "from", "type": "address"},
-                                {"indexed": True, "name": "to", "type": "address"},
-                                {"indexed": False, "name": "value", "type": "uint256"}
-                            ],
-                            "name": "Transfer",
-                            "type": "event"
-                        }
-                        decoded_logs = decode_logs(receipt['logs'], erc20_transfer_event_abi)
-                        for log in decoded_logs:
-                            if log['from'] == address['address'].lower() or log['to'] == address['address'].lower():
-                                print('INTERNAL_ETH_DATA', receipt)
-                                if receipt.status == 1:
-                                    if receipt['to'] is None:
-                                        to_address = address['address']
-                                        amount = log['value'] / (10 ** 6)
-                                        amount = float(Web3.from_wei(amount, 'ether'))
-                                        usd_amount = f"{(float(amount) * ETH_USD):,.2f}"
-                                        amount = f"{amount:,.5f}".rstrip('0').rstrip('.')
-                                        amount_type = "ETH"
-                                    if log['address'] == usdt_addr:
-                                        amount = log['value'] / (10 ** 6)
-                                        usd_amount = f"{(float(amount) * USDT_USD):,.2f}"
-                                        amount = f"{amount:,.2f}"
-                                        amount_type = "USDT"
-                                    if log['address'] == usdc_addr:
-                                        amount = log['value'] / (10 ** 6)
-                                        usd_amount = f"{(float(amount) * USDC_USD):,.2f}"
-                                        amount = f"{amount:,.2f}"
-                                        amount_type = "USDC"
-                                    msg = msg_template
-                                    msg = msg.replace("VAR_NAME", address['name'])
-                                    msg = msg.replace("VAR_ADDRESS", address['address'][-5:])
-                                    msg = msg.replace("VAR_SEND_ADDRESS", f"{log['from'][:6]}...{log['from'][-4:]}")
-                                    msg = msg.replace("VAR_SEND_LINK", f"https://etherscan.io/address/{log['from']}")
-                                    msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{log['to'][:6]}...{log['to'][-4:]}")
-                                    msg = msg.replace("VAR_RECEIVE_LINK", f"https://etherscan.io/address/{log['to']}")
+                    to_address, amount = decode_token_transfer_input(tx['input'].hex())
+                    if (tx['to'] and tx['to'] == address['address']) or (tx['from'] and tx['from'] == address['address']) or (to_address and to_address == address['address']) :
+                        relevant_transactions.append(tx)
 
-                                    fee = web3.from_wei(receipt['effectiveGasPrice'] * receipt.gasUsed, 'ether')
-                                    usd_fee = f"{(float(fee) * ETH_USD):,.2f}"
-                                    if amount_type == 'USDT':
-                                        fee = float(fee) * ETH_USD / USDT_USD
-                                        fee = f"{float(fee):,.2f}"
-                                    elif amount_type == 'USDC':
-                                        fee = float(fee) * ETH_USD / USDC_USD
-                                        fee = f"{float(fee):,.2f}"
-                                    else:
-                                        fee = f"{float(fee):,.5f}".rstrip('0').rstrip('.')
-                                    if log['from'].lower() == address['address'].lower():
-                                        msg = msg.replace("VAR_AMOUNT", f"-{amount} {amount_type}")
-                                        msg = msg.replace("VAR_SENT_RECEIVED", "Sent")
-                                        msg = msg.replace("VAR_USD_AMOUNT", f"-${usd_amount} USD")
-                                    else:
-                                        msg = msg.replace("VAR_AMOUNT", f"+{amount} {amount_type}")
-                                        msg = msg.replace("VAR_SENT_RECEIVED", "Received")
-                                        msg = msg.replace("VAR_USD_AMOUNT", f"+${usd_amount} USD")
-                                    msg = msg.replace("VAR_FEE", f"{fee} {amount_type} ($" + f"{usd_fee}" + ")")
-                                    msg = msg.replace("VAR_TX_LINK", f"https://etherscan.io/tx/{receipt['transactionHash'].hex()}")
-                                    context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
+                    # receipt = web3.eth.get_transaction_receipt(tx['hash'].hex())
+                    # if len(receipt['logs']) == 1:
+                    #     to_address, amount = decode_token_transfer_input(tx['input'].hex())
+                    #     if (tx['to'] and tx['to'] == address['address']) or (tx['from'] and tx['from'] == address['address']) or (to_address and to_address == address['address']) :
+                    #         relevant_transactions.append(tx)
+                    # elif len(receipt['logs']) > 1:
+                    #     erc20_transfer_event_abi = {
+                    #         "anonymous": False,
+                    #         "inputs": [
+                    #             {"indexed": True, "name": "from", "type": "address"},
+                    #             {"indexed": True, "name": "to", "type": "address"},
+                    #             {"indexed": False, "name": "value", "type": "uint256"}
+                    #         ],
+                    #         "name": "Transfer",
+                    #         "type": "event"
+                    #     }
+                    #     decoded_logs = decode_logs(receipt['logs'], erc20_transfer_event_abi)
+                    #     for log in decoded_logs:
+                    #         if log['from'] == address['address'].lower() or log['to'] == address['address'].lower():
+                    #             print('INTERNAL_ETH_DATA', receipt)
+                    #             if receipt.status == 1:
+                    #                 if receipt['to'] is None:
+                    #                     to_address = address['address']
+                    #                     amount = log['value'] / (10 ** 6)
+                    #                     amount = float(Web3.from_wei(amount, 'ether'))
+                    #                     usd_amount = f"{(float(amount) * ETH_USD):,.2f}"
+                    #                     amount = f"{amount:,.5f}".rstrip('0').rstrip('.')
+                    #                     amount_type = "ETH"
+                    #                 if log['address'] == usdt_addr:
+                    #                     amount = log['value'] / (10 ** 6)
+                    #                     usd_amount = f"{(float(amount) * USDT_USD):,.2f}"
+                    #                     amount = f"{amount:,.2f}"
+                    #                     amount_type = "USDT"
+                    #                 if log['address'] == usdc_addr:
+                    #                     amount = log['value'] / (10 ** 6)
+                    #                     usd_amount = f"{(float(amount) * USDC_USD):,.2f}"
+                    #                     amount = f"{amount:,.2f}"
+                    #                     amount_type = "USDC"
+                    #                 msg = msg_template
+                    #                 msg = msg.replace("VAR_NAME", address['name'])
+                    #                 msg = msg.replace("VAR_ADDRESS", address['address'][-5:])
+                    #                 msg = msg.replace("VAR_SEND_ADDRESS", f"{log['from'][:6]}...{log['from'][-4:]}")
+                    #                 msg = msg.replace("VAR_SEND_LINK", f"https://etherscan.io/address/{log['from']}")
+                    #                 msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{log['to'][:6]}...{log['to'][-4:]}")
+                    #                 msg = msg.replace("VAR_RECEIVE_LINK", f"https://etherscan.io/address/{log['to']}")
+
+                    #                 fee = web3.from_wei(receipt['effectiveGasPrice'] * receipt.gasUsed, 'ether')
+                    #                 usd_fee = f"{(float(fee) * ETH_USD):,.2f}"
+                    #                 if amount_type == 'USDT':
+                    #                     fee = float(fee) * ETH_USD / USDT_USD
+                    #                     fee = f"{float(fee):,.2f}"
+                    #                 elif amount_type == 'USDC':
+                    #                     fee = float(fee) * ETH_USD / USDC_USD
+                    #                     fee = f"{float(fee):,.2f}"
+                    #                 else:
+                    #                     fee = f"{float(fee):,.5f}".rstrip('0').rstrip('.')
+                    #                 if log['from'].lower() == address['address'].lower():
+                    #                     msg = msg.replace("VAR_AMOUNT", f"-{amount} {amount_type}")
+                    #                     msg = msg.replace("VAR_SENT_RECEIVED", "Sent")
+                    #                     msg = msg.replace("VAR_USD_AMOUNT", f"-${usd_amount} USD")
+                    #                 else:
+                    #                     msg = msg.replace("VAR_AMOUNT", f"+{amount} {amount_type}")
+                    #                     msg = msg.replace("VAR_SENT_RECEIVED", "Received")
+                    #                     msg = msg.replace("VAR_USD_AMOUNT", f"+${usd_amount} USD")
+                    #                 msg = msg.replace("VAR_FEE", f"{fee} {amount_type} ($" + f"{usd_fee}" + ")")
+                    #                 msg = msg.replace("VAR_TX_LINK", f"https://etherscan.io/tx/{receipt['transactionHash'].hex()}")
+                    #                 context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
 
             print('ETH_DATA', relevant_transactions)
 
@@ -611,7 +612,7 @@ def handle_text_input(update: Update, context: CallbackContext):
                 })
                 user[user_id]['enabled'] = True
                 if user[user_id]['is_started_check'] == False:
-                    context.job_queue.run_repeating(check_user, interval=60, context={'user_id': user_id, 'chat_id': chat_id})
+                    context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
                 user[user_id]['is_started_check'] = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
