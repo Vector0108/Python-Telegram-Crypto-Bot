@@ -5,8 +5,8 @@ from telegram.ext import filters
 import requests
 import math
 from bitcoinaddress import Address
-from eth_abi import decode
-from tronpy.abi import trx_abi
+# from eth_abi import decode
+# from tronpy.abi import trx_abi
 
 # from telegram.error import TelegramError
 # import logging
@@ -155,27 +155,27 @@ def calculate_result(transaction, address):
     # Result is total received minus total sent
     return float((total_received - total_sent) / 10**8)
 
-def decode_logs(logs, event_abi):
-    event_signature = Web3.keccak(text=f"{event_abi['name']}({','.join([input['type'] for input in event_abi['inputs']])})").hex()
-    decoded_logs = []
-    for log in logs:
-        if log['topics'][0].hex() == event_signature:
-            topics = log['topics'][1:]
-            data_types = [input['type'] for input in event_abi['inputs'] if not input['indexed']]
-            data_hex_str = log['data'].hex()
-            if data_hex_str[2:]:
-                data = trx_abi.decode_abi(data_types, bytes.fromhex(data_hex_str[2:]))
-            else:
-                continue
-            indexed_data = [decode(['address'], bytes.fromhex(topic.hex()[2:]))[0] for topic in topics]
-            decoded_log = {
-                "from": indexed_data[0],
-                "to": indexed_data[1],
-                "value": data[0],
-                "address": log['address']
-            }
-            decoded_logs.append(decoded_log)
-    return decoded_logs
+# def decode_logs(logs, event_abi):
+#     event_signature = Web3.keccak(text=f"{event_abi['name']}({','.join([input['type'] for input in event_abi['inputs']])})").hex()
+#     decoded_logs = []
+#     for log in logs:
+#         if log['topics'][0].hex() == event_signature:
+#             topics = log['topics'][1:]
+#             data_types = [input['type'] for input in event_abi['inputs'] if not input['indexed']]
+#             data_hex_str = log['data'].hex()
+#             if data_hex_str[2:]:
+#                 data = trx_abi.decode_abi(data_types, bytes.fromhex(data_hex_str[2:]))
+#             else:
+#                 continue
+#             indexed_data = [decode(['address'], bytes.fromhex(topic.hex()[2:]))[0] for topic in topics]
+#             decoded_log = {
+#                 "from": indexed_data[0],
+#                 "to": indexed_data[1],
+#                 "value": data[0],
+#                 "address": log['address']
+#             }
+#             decoded_logs.append(decoded_log)
+#     return decoded_logs
 
 
 def check_user(context: CallbackContext):
@@ -203,7 +203,6 @@ def check_user(context: CallbackContext):
             for block_number in range(start_block, latest_block_num + 1):
                 block = web3.eth.get_block(block_number, full_transactions=True)
                 for tx in block.transactions:
-                    receipt = web3.eth.get_transaction_receipt(tx['hash'].hex())
                     to_address, amount = decode_token_transfer_input(tx['input'].hex())
                     if (tx['to'] and tx['to'] == address['address']) or (tx['from'] and tx['from'] == address['address']) or (to_address and to_address == address['address']) :
                         relevant_transactions.append(tx)
@@ -612,7 +611,7 @@ def handle_text_input(update: Update, context: CallbackContext):
                 })
                 user[user_id]['enabled'] = True
                 if user[user_id]['is_started_check'] == False:
-                    context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
+                    context.job_queue.run_repeating(check_user, interval=60, context={'user_id': user_id, 'chat_id': chat_id})
                 user[user_id]['is_started_check'] = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
