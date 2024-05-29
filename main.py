@@ -763,8 +763,8 @@ def main():
     # Replace 'YOUR_TOKEN' with the token you got from BotFather
     print ("Server is started.")
 
-    # TOKEN = '7029839129:AAFRC0XT6mcDdnIWyxT_c2CFxFbzOvbW6Vc'
-    TOKEN = '7032628654:AAHC-OLfrcgqp2SY_75YZj_wwjIt4OU_4Z8'
+    TOKEN = '7029839129:AAFRC0XT6mcDdnIWyxT_c2CFxFbzOvbW6Vc'
+    # TOKEN = '7032628654:AAHC-OLfrcgqp2SY_75YZj_wwjIt4OU_4Z8'
     updater = Updater(TOKEN, use_context = True)
     dp = updater.dispatcher
     setup_dispatcher(dp)
