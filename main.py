@@ -5,6 +5,9 @@ from telegram.ext import filters
 import requests
 import math
 from bitcoinaddress import Address
+from eth_abi import decode
+from tronpy.abi import trx_abi
+
 # from telegram.error import TelegramError
 # import logging
 # import schedule
@@ -152,6 +155,29 @@ def calculate_result(transaction, address):
     # Result is total received minus total sent
     return float((total_received - total_sent) / 10**8)
 
+def decode_logs(logs, event_abi):
+    event_signature = Web3.keccak(text=f"{event_abi['name']}({','.join([input['type'] for input in event_abi['inputs']])})").hex()
+    decoded_logs = []
+    for log in logs:
+        if log['topics'][0].hex() == event_signature:
+            topics = log['topics'][1:]
+            data_types = [input['type'] for input in event_abi['inputs'] if not input['indexed']]
+            data_hex_str = log['data'].hex()
+            if data_hex_str[2:]:
+                data = trx_abi.decode_abi(data_types, bytes.fromhex(data_hex_str[2:]))
+            else:
+                continue
+            indexed_data = [decode(['address'], bytes.fromhex(topic.hex()[2:]))[0] for topic in topics]
+            decoded_log = {
+                "from": indexed_data[0],
+                "to": indexed_data[1],
+                "value": data[0],
+                "address": log['address']
+            }
+            decoded_logs.append(decoded_log)
+    return decoded_logs
+
+
 def check_user(context: CallbackContext):
     job_context = context.job.context
     user_id = job_context['user_id']
@@ -177,9 +203,77 @@ def check_user(context: CallbackContext):
             for block_number in range(start_block, latest_block_num + 1):
                 block = web3.eth.get_block(block_number, full_transactions=True)
                 for tx in block.transactions:
-                    to_address, amount = decode_token_transfer_input(tx['input'].hex())
-                    if (tx['to'] and tx['to'] == address['address']) or (tx['from'] and tx['from'] == address['address']) or (to_address and to_address == address['address']) :
-                        relevant_transactions.append(tx)
+                    # to_address, amount = decode_token_transfer_input(tx['input'].hex())
+                    # if (tx['to'] and tx['to'] == address['address']) or (tx['from'] and tx['from'] == address['address']) or (to_address and to_address == address['address']) :
+                    #     relevant_transactions.append(tx)
+
+                    receipt = web3.eth.get_transaction_receipt(tx['hash'].hex())
+                    if len(receipt['logs']) == 1:
+                        to_address, amount = decode_token_transfer_input(tx['input'].hex())
+                        if (tx['to'] and tx['to'] == address['address']) or (tx['from'] and tx['from'] == address['address']) or (to_address and to_address == address['address']) :
+                            relevant_transactions.append(tx)
+                    elif len(receipt['logs']) > 1:
+                        erc20_transfer_event_abi = {
+                            "anonymous": False,
+                            "inputs": [
+                                {"indexed": True, "name": "from", "type": "address"},
+                                {"indexed": True, "name": "to", "type": "address"},
+                                {"indexed": False, "name": "value", "type": "uint256"}
+                            ],
+                            "name": "Transfer",
+                            "type": "event"
+                        }
+                        decoded_logs = decode_logs(receipt['logs'], erc20_transfer_event_abi)
+                        for log in decoded_logs:
+                            if log['from'] == address['address'].lower() or log['to'] == address['address'].lower():
+                                print('INTERNAL_ETH_DATA', receipt)
+                                if receipt.status == 1:
+                                    if receipt['to'] is None:
+                                        to_address = address['address']
+                                        amount = log['value'] / (10 ** 6)
+                                        amount = float(Web3.from_wei(amount, 'ether'))
+                                        usd_amount = f"{(float(amount) * ETH_USD):,.2f}"
+                                        amount = f"{amount:,.5f}".rstrip('0').rstrip('.')
+                                        amount_type = "ETH"
+                                    if log['address'] == usdt_addr:
+                                        amount = log['value'] / (10 ** 6)
+                                        usd_amount = f"{(float(amount) * USDT_USD):,.2f}"
+                                        amount = f"{amount:,.2f}"
+                                        amount_type = "USDT"
+                                    if log['address'] == usdc_addr:
+                                        amount = log['value'] / (10 ** 6)
+                                        usd_amount = f"{(float(amount) * USDC_USD):,.2f}"
+                                        amount = f"{amount:,.2f}"
+                                        amount_type = "USDC"
+                                    msg = msg_template
+                                    msg = msg.replace("VAR_NAME", address['name'])
+                                    msg = msg.replace("VAR_ADDRESS", address['address'][-5:])
+                                    msg = msg.replace("VAR_SEND_ADDRESS", f"{log['from'][:6]}...{log['from'][-4:]}")
+                                    msg = msg.replace("VAR_SEND_LINK", f"https://etherscan.io/address/{log['from']}")
+                                    msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{log['to'][:6]}...{log['to'][-4:]}")
+                                    msg = msg.replace("VAR_RECEIVE_LINK", f"https://etherscan.io/address/{log['to']}")
+
+                                    fee = web3.from_wei(receipt['effectiveGasPrice'] * receipt.gasUsed, 'ether')
+                                    usd_fee = f"{(float(fee) * ETH_USD):,.2f}"
+                                    if amount_type == 'USDT':
+                                        fee = float(fee) * ETH_USD / USDT_USD
+                                        fee = f"{float(fee):,.2f}"
+                                    elif amount_type == 'USDC':
+                                        fee = float(fee) * ETH_USD / USDC_USD
+                                        fee = f"{float(fee):,.2f}"
+                                    else:
+                                        fee = f"{float(fee):,.5f}".rstrip('0').rstrip('.')
+                                    if log['from'].lower() == address['address'].lower():
+                                        msg = msg.replace("VAR_AMOUNT", f"-{amount} {amount_type}")
+                                        msg = msg.replace("VAR_SENT_RECEIVED", "Sent")
+                                        msg = msg.replace("VAR_USD_AMOUNT", f"-${usd_amount} USD")
+                                    else:
+                                        msg = msg.replace("VAR_AMOUNT", f"+{amount} {amount_type}")
+                                        msg = msg.replace("VAR_SENT_RECEIVED", "Received")
+                                        msg = msg.replace("VAR_USD_AMOUNT", f"+${usd_amount} USD")
+                                    msg = msg.replace("VAR_FEE", f"{fee} {amount_type} ($" + f"{usd_fee}" + ")")
+                                    msg = msg.replace("VAR_TX_LINK", f"https://etherscan.io/tx/{receipt['transactionHash'].hex()}")
+                                    context.bot.send_message(chat_id, msg, parse_mode="HTML", disable_web_page_preview=True)
 
             print('ETH_DATA', relevant_transactions)
 
@@ -208,7 +302,7 @@ def check_user(context: CallbackContext):
                     msg = msg.replace("VAR_ADDRESS", address['address'][-5:])
                     msg = msg.replace("VAR_SEND_ADDRESS", f"{txn['from'][:6]}...{txn['from'][-4:]}")
                     msg = msg.replace("VAR_SEND_LINK", f"https://etherscan.io/address/{txn['from']}")
-                    msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{txn['to'][:6]}...{to_address[-4:]}")
+                    msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{to_address[:6]}...{to_address[-4:]}")
                     msg = msg.replace("VAR_RECEIVE_LINK", f"https://etherscan.io/address/{to_address}")
                     
                     fee = web3.from_wei(txn['gasPrice'] * txn_receipt.gasUsed, 'ether')
@@ -238,7 +332,7 @@ def check_user(context: CallbackContext):
             url = f"https://api.blockcypher.com/v1/btc/main?token={blockcypher_token}"
             response = requests.get(url)
             if response.status_code != 200:
-                print(f"Failed to fetch latest block number: {response.status_code}")
+                print(f"Failed to fetch BTC latest block number: {response.status_code}")
                 continue
 
             latest_block_data = response.json()
@@ -517,7 +611,7 @@ def handle_text_input(update: Update, context: CallbackContext):
                 })
                 user[user_id]['enabled'] = True
                 if user[user_id]['is_started_check'] == False:
-                    context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
+                    context.job_queue.run_repeating(check_user, interval=60, context={'user_id': user_id, 'chat_id': chat_id})
                 user[user_id]['is_started_check'] = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
@@ -569,7 +663,7 @@ def handle_text_input(update: Update, context: CallbackContext):
                 })
                 user[user_id]['enabled'] = True
                 if user[user_id]['is_started_check'] == False:
-                    context.job_queue.run_repeating(check_user, interval=20, context={'user_id': user_id, 'chat_id': chat_id})
+                    context.job_queue.run_repeating(check_user, interval=60, context={'user_id': user_id, 'chat_id': chat_id})
                 user[user_id]['is_started_check'] = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
@@ -669,7 +763,8 @@ def main():
     # Replace 'YOUR_TOKEN' with the token you got from BotFather
     print ("Server is started.")
 
-    TOKEN = '7029839129:AAFRC0XT6mcDdnIWyxT_c2CFxFbzOvbW6Vc'
+    # TOKEN = '7029839129:AAFRC0XT6mcDdnIWyxT_c2CFxFbzOvbW6Vc'
+    TOKEN = '7032628654:AAHC-OLfrcgqp2SY_75YZj_wwjIt4OU_4Z8'
     updater = Updater(TOKEN, use_context = True)
     dp = updater.dispatcher
     setup_dispatcher(dp)

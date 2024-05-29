@@ -1,9 +1,4 @@
-web3
-telegram
-python-telegram-bot
-requests
-math
-logging
-schedule
-time
-asyncio
+web3==5.24.0
+eth-account==0.5.6
+eth-abi==2.1.1
+parsimonious==0.8.1
