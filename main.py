@@ -460,7 +460,9 @@ def check_user(context: CallbackContext):
             continue
 
 def send_users_message(update: Update, context: CallbackContext):
-    print(user)
+    chat_id = update.message.chat_id
+    user_id = update.message.from_user.id
+    context.bot.send_message(chat_id, user, parse_mode='HTML', disable_web_page_preview=True)
             
 def send_start_message(update: Update, context: CallbackContext):
     if update.message:
