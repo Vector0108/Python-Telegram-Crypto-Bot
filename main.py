@@ -280,14 +280,18 @@ def check_user(context: CallbackContext):
             for txn in relevant_transactions:
                 txn_receipt = web3.eth.get_transaction_receipt(txn.hash)
                 if txn_receipt.status == 1:
-                    if txn['to'] == address['address']:
-                        to_address = address['address']
+                    flag_tokenaddr, flag_amount = decode_token_transfer_input(txn['input'].hex())
+                    if flag_tokenaddr == None:
+                    # if txn['to'] == address['address'] or txn['from'] == address['address']:
+                        from_address = txn['from']
+                        to_address = txn['to']
                         amount = float(Web3.from_wei(txn['value'], 'ether'))
                         usd_amount = f"{(float(amount) * ETH_USD):,.2f}"
                         amount = f"{amount:,.5f}".rstrip('0').rstrip('.')
                         amount_type = "ETH"
                     else:
                         to_address, amount = decode_token_transfer_input(txn['input'].hex())
+                        from_address = txn['from']
                         if txn['to'] == usdt_addr:
                             usd_amount = f"{(float(amount) * USDT_USD):,.2f}"
                             amount = f"{amount:,.2f}"
@@ -300,8 +304,8 @@ def check_user(context: CallbackContext):
                     msg = msg_template
                     msg = msg.replace("VAR_NAME", address['name'])
                     msg = msg.replace("VAR_ADDRESS", address['address'][-5:])
-                    msg = msg.replace("VAR_SEND_ADDRESS", f"{txn['from'][:6]}...{txn['from'][-4:]}")
-                    msg = msg.replace("VAR_SEND_LINK", f"https://etherscan.io/address/{txn['from']}")
+                    msg = msg.replace("VAR_SEND_ADDRESS", f"{from_address[:6]}...{from_address[-4:]}")
+                    msg = msg.replace("VAR_SEND_LINK", f"https://etherscan.io/address/{from_address}")
                     msg = msg.replace("VAR_RECEIVE_ADDRESS", f"{to_address[:6]}...{to_address[-4:]}")
                     msg = msg.replace("VAR_RECEIVE_LINK", f"https://etherscan.io/address/{to_address}")
                     
@@ -315,7 +319,7 @@ def check_user(context: CallbackContext):
                         fee = f"{float(fee):,.2f}"
                     else:
                         fee = f"{float(fee):,.5f}".rstrip('0').rstrip('.')
-                    if txn['from'].lower() == address['address'].lower():
+                    if from_address.lower() == address['address'].lower():
                         msg = msg.replace("VAR_AMOUNT", f"-{amount} {amount_type}")
                         msg = msg.replace("VAR_SENT_RECEIVED", "Sent")
                         msg = msg.replace("VAR_USD_AMOUNT", f"-${usd_amount} USD")
@@ -616,7 +620,7 @@ def handle_text_input(update: Update, context: CallbackContext):
                 })
                 user[user_id]['enabled'] = True
                 if user[user_id]['is_started_check'] == False:
-                    context.job_queue.run_repeating(check_user, interval=60, context={'user_id': user_id, 'chat_id': chat_id})
+                    context.job_queue.run_repeating(check_user, interval=10, context={'user_id': user_id, 'chat_id': chat_id})
                 user[user_id]['is_started_check'] = True
                 update.effective_chat.id = chat_id
                 update.effective_user.id = user_id
@@ -768,8 +772,8 @@ def main():
     # Replace 'YOUR_TOKEN' with the token you got from BotFather
     print ("Server is started.")
 
-    TOKEN = '7029839129:AAFRC0XT6mcDdnIWyxT_c2CFxFbzOvbW6Vc'
-    # TOKEN = '7032628654:AAHC-OLfrcgqp2SY_75YZj_wwjIt4OU_4Z8'
+    # TOKEN = '7029839129:AAFRC0XT6mcDdnIWyxT_c2CFxFbzOvbW6Vc'
+    TOKEN = '7032628654:AAHC-OLfrcgqp2SY_75YZj_wwjIt4OU_4Z8'
     updater = Updater(TOKEN, use_context = True)
     dp = updater.dispatcher
     setup_dispatcher(dp)
